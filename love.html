@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>浪漫表白 💖</title>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Lottie 动效 -->
+    <script src="https://cdn.lottiefiles.com/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+    <style>
+        html, body, #app {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0b1a3d;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            color: white;
+        }
+        #particles-js {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+        .center-ui {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 22px;
+            font-size: 18px;
+            background: #ff5c8d;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+        }
+        button:active { transform: scale(0.95); }
+
+        /* 右上角静音按钮 */
+        .mute-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 3;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        /* 牵手图片样式与动画 */
+        .hand-image {
+            max-width: 80%;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.5s ease-out;
+        }
+        .hand-image.enlarge {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="particles-js"></div>
+
+<div id="app">
+    <!-- 静音按钮 -->
+    <div v-if="started" class="mute-btn">
+        <button @click="toggleMute">{{ isMuted ? "🔇 静音中" : "🔊 有声中" }}</button>
+    </div>
+
+    <!-- 初始按钮区 -->
+    <div v-if="!started" class="center-ui">
+        <lottie-player
+                src="https://assets3.lottiefiles.com/packages/lf20_gjmecwii.json"
+                background="transparent" speed="1.2"
+                style="width:200px;height:200px;" loop autoplay>
+        </lottie-player>
+        <h2>想对你说一句话…</h2>
+        <button @click="begin">点我 💌</button>
+    </div>
+
+    <!-- 打字展示区 -->
+    <div v-if="started && !finished" class="center-ui">
+        <lottie-player
+                src="https://assets7.lottiefiles.com/private_files/lf30_jmgekfqg.json"
+                background="transparent" speed="1.1"
+                style="width:230px;height:230px;" loop autoplay>
+        </lottie-player>
+        <h1>{{ displayText }}</h1>
+    </div>
+
+    <!-- 完成后显示图片区 -->
+    <div v-if="finished" class="center-ui">
+        <img
+                :src="handImage"
+                alt="牵手照片"
+                class="hand-image"
+                @click="toggleImageSize"
+                :class="{ enlarge: enlarged }"
+        />
+    </div>
+
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                started: false,
+                finished: false,
+                displayText: "",
+                handImage: "https://q0.itc.cn/images01/20240714/fc69d44bc6364f4b8862ff1b6b9dccd1.jpeg",
+                enlarged: false,
+                isMuted: false,
+                messages: [
+                    "遇见你，是我最美的意外 ❤️",
+                    "每天醒来第一件想的事是你 🥰",
+                    "喜欢你，不只是说说而已 💖",
+                    "愿意和我一起走下去吗？💍"
+                ],
+                typingSpeed: 90,
+                pauseAfter: 1200,
+                audioUrl: "https://er-sycdn.kuwo.cn/c66cc9da9d806e90feb59f16bb8944e4/694d51b8/resource/30106/trackmedia/M5000019N0FV1LNNvy.mp3",
+                audio: null
+            };
+        },
+        methods: {
+            begin() {
+                this.started = true;
+                this.startMusicFadeIn();
+                this.loopTypewriter();
+            },
+
+            startMusicFadeIn() {
+                this.audio = new Audio(this.audioUrl);
+                this.audio.loop = false;
+                this.audio.volume = 0.0;
+                this.audio.play().catch(err => {
+                    console.warn("播放被阻止:", err);
+                });
+
+                let volume = 0.0;
+                const interval = setInterval(() => {
+                    if (this.isMuted) {
+                        this.audio.volume = 0;
+                        clearInterval(interval);
+                        return;
+                    }
+                    volume += 0.02;
+                    this.audio.volume = Math.min(volume, 1.0);
+                    if (volume >= 1.0) clearInterval(interval);
+                }, 100);
+            },
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                if (this.audio) {
+                    this.audio.volume = this.isMuted ? 0 : 1;
+                }
+            },
+
+            toggleImageSize() {
+                this.enlarged = !this.enlarged;
+            },
+
+            async loopTypewriter() {
+                for (const msg of this.messages) {
+                    await this.typeSentence(msg);
+                    await this.delay(this.pauseAfter);
+                    await this.deleteSentence();
+                }
+                this.finished = true;
+            },
+
+            typeSentence(sentence) {
+                return new Promise(resolve => {
+                    let i = 0;
+                    this.displayText = "";
+                    const intv = setInterval(() => {
+                        this.displayText += sentence[i++];
+                        if (i === sentence.length) {
+                            clearInterval(intv);
+                            resolve();
+                        }
+                    }, this.typingSpeed);
+                });
+            },
+
+            deleteSentence() {
+                return new Promise(resolve => {
+                    const intv = setInterval(() => {
+                        this.displayText = this.displayText.slice(0, -1);
+                        if (!this.displayText) {
+                            clearInterval(intv);
+                            resolve();
+                        }
+                    }, this.typingSpeed / 1.5);
+                });
+            },
+
+            delay(ms) {
+                return new Promise(res => setTimeout(res, ms));
+            }
+        },
+
+        mounted() {
+            particlesJS("particles-js", {
+                particles: {
+                    number: { value: 80, density: { enable: true, value_area: 800 } },
+                    color: { value: "#ffffff" },
+                    shape: { type: "circle" },
+                    opacity: { value: 0.7 },
+                    size: { value: 3 },
+                    move: { enable: true, speed: 2, direction: "none" }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: {
+                        onhover: { enable: true, mode: ["grab", "bubble"] },
+                        onclick: { enable: true, mode: "push" },
+                        resize: true
+                    },
+                    modes: {
+                        grab: { distance: 180, line_linked: { opacity: 0.4 } },
+                        bubble: { distance: 120, size: 6, duration: 2, opacity: 0.8 },
+                        push: { particles_nb: 4 }
+                    }
+                },
+                retina_detect: true
+            });
+        }
+    }).mount("#app");
+</script>
+
+</body>
+</html>
