@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>浪漫表白 💖</title>
 
     <!-- Vue 3 -->
@@ -18,238 +19,254 @@
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden;
-            background: #0b1a3d;
+            background: #05040a;
             font-family: "Microsoft YaHei", Arial, sans-serif;
             color: white;
         }
-        #particles-js {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
+
         .center-ui {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            z-index: 2;
+            z-index: 4;
         }
+
         button {
             margin-top: 20px;
-            padding: 10px 22px;
+            padding: 12px 28px;
             font-size: 18px;
             background: #ff5c8d;
             border: none;
             border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
             color: white;
+            cursor: pointer;
         }
-        button:active { transform: scale(0.95); }
 
-        /* 右上角静音按钮 */
         .mute-btn {
             position: fixed;
             top: 16px;
             right: 16px;
-            z-index: 3;
+            z-index: 5;
             background: rgba(0,0,0,0.6);
             padding: 8px 12px;
             border-radius: 6px;
-            font-size: 16px;
         }
 
-        /* 牵手图片样式与动画 */
+        /* 图片梦幻效果 */
         .hand-image {
-            max-width: 80%;
-            border-radius: 12px;
+            max-width: 88%;
+            border-radius: 16px;
             margin-top: 20px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-            cursor: pointer;
-            transition: transform 0.5s ease-out;
+            position: relative;
+            z-index: 4;
+            animation: breathing 4.2s ease-in-out infinite, glowPulse 2.8s ease-in-out infinite, fadePulse 3.6s ease-in-out infinite;
+            will-change: transform, box-shadow, opacity;
         }
-        .hand-image.enlarge {
-            transform: scale(1.2);
+        @keyframes breathing {0% {transform: scale(1);}50% {transform: scale(1.05);}100% {transform: scale(1);}}
+        @keyframes glowPulse {0% {box-shadow:0 0 16px rgba(120,200,255,0.35);}50% {box-shadow:0 0 36px rgba(120,200,255,0.95);}100% {box-shadow:0 0 16px rgba(120,200,255,0.35);}}
+        @keyframes fadePulse {0% {opacity:0.9;}50% {opacity:1;}100% {opacity:0.9;}}
+        .hand-image::after {
+            content:"";
+            position:absolute;
+            top:-6px; left:-6px; right:-6px; bottom:-6px;
+            border-radius:18px;
+            background: linear-gradient(135deg, rgba(0,255,255,0.9), rgba(0,140,255,0.9), rgba(120,200,255,0.9));
+            filter: blur(16px);
+            opacity:0.85;
+            z-index:-1;
+            animation:borderGlow 3.5s ease-in-out infinite;
+        }
+        @keyframes borderGlow {0% {opacity:0.65;}50% {opacity:0.98;}100% {opacity:0.65;}}
+
+        /* 极光层 */
+        .aurora {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 130%;
+            height: 130%;
+            background: radial-gradient(ellipse at top, rgba(80,180,255,0.15), rgba(120,100,255,0.1), rgba(0,0,0,0));
+            filter: blur(40px);
+            z-index: 2;
+            animation: auroraMove 18s ease-in-out infinite;
+        }
+        @keyframes auroraMove {0% {transform:translateX(-20px);}50% {transform:translateX(20px);}100% {transform:translateX(-20px);}}
+
+        /* Particles.js 星星层 */
+        #particles-js {
+            position: fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            z-index:1;
+            transform-origin: center center;
+            animation: rotateSky 360s linear infinite;
+        }
+        @keyframes rotateSky {0% {transform:rotate(0deg);}100% {transform:rotate(360deg);}}
+
+        /* Canvas 流星和爱心层 */
+        #effects-canvas {
+            position: fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            pointer-events:none;
+            z-index:3;
         }
     </style>
 </head>
-
 <body>
 
+<div class="aurora"></div>
 <div id="particles-js"></div>
+<canvas id="effects-canvas"></canvas>
 
 <div id="app">
-    <!-- 静音按钮 -->
     <div v-if="started" class="mute-btn">
         <button @click="toggleMute">{{ isMuted ? "🔇 静音中" : "🔊 有声中" }}</button>
     </div>
-
-    <!-- 初始按钮区 -->
     <div v-if="!started" class="center-ui">
-        <lottie-player
-                src="https://assets3.lottiefiles.com/packages/lf20_gjmecwii.json"
-                background="transparent" speed="1.2"
-                style="width:200px;height:200px;" loop autoplay>
-        </lottie-player>
+        <lottie-player src="https://assets3.lottiefiles.com/packages/lf20_gjmecwii.json" background="transparent" speed="1.2" style="width:200px;height:200px;" loop autoplay></lottie-player>
         <h2>想对你说一句话…</h2>
         <button @click="begin">点我 💌</button>
     </div>
-
-    <!-- 打字展示区 -->
     <div v-if="started && !finished" class="center-ui">
-        <lottie-player
-                src="https://assets7.lottiefiles.com/private_files/lf30_jmgekfqg.json"
-                background="transparent" speed="1.1"
-                style="width:230px;height:230px;" loop autoplay>
-        </lottie-player>
+        <lottie-player src="https://assets7.lottiefiles.com/private_files/lf30_jmgekfqg.json" background="transparent" speed="1.1" style="width:230px;height:230px;" loop autoplay></lottie-player>
         <h1>{{ displayText }}</h1>
     </div>
-
-    <!-- 完成后显示图片区 -->
     <div v-if="finished" class="center-ui">
-        <img
-                :src="handImage"
-                alt="牵手照片"
-                class="hand-image"
-                @click="toggleImageSize"
-                :class="{ enlarge: enlarged }"
-        />
+        <img :src="handImage" alt="牵手照片" class="hand-image"/>
     </div>
-
 </div>
 
 <script>
     const { createApp } = Vue;
-
     createApp({
         data() {
             return {
-                started: false,
-                finished: false,
-                displayText: "",
-                handImage: "https://q0.itc.cn/images01/20240714/fc69d44bc6364f4b8862ff1b6b9dccd1.jpeg",
-                enlarged: false,
-                isMuted: false,
-                messages: [
-                    "遇见你，是我最美的意外 ❤️",
-                    "每天醒来第一件想的事是你 🥰",
-                    "喜欢你，不只是说说而已 💖",
-                    "愿意和我一起走下去吗？💍"
-                ],
-                typingSpeed: 90,
-                pauseAfter: 1200,
-                audioUrl: "https://er-sycdn.kuwo.cn/c66cc9da9d806e90feb59f16bb8944e4/694d51b8/resource/30106/trackmedia/M5000019N0FV1LNNvy.mp3",
-                audio: null
+                started:false,
+                finished:false,
+                displayText:"",
+                handImage:"https://q0.itc.cn/images01/20240714/fc69d44bc6364f4b8862ff1b6b9dccd1.jpeg",
+                isMuted:false,
+                messages:["遇见你，是我最美的意外 ❤️","每天醒来第一件想的事是你 🥰","喜欢你，不只是说说而已 💖","愿意和我一起走下去吗？💍"],
+                typingSpeed:90,
+                pauseAfter:1200,
+                audioUrl:"https://er-sycdn.kuwo.cn/c66cc9da9d806e90feb59f16bb8944e4/694d51b8/resource/30106/trackmedia/M5000019N0FV1LNNvy.mp3",
+                audioCtx:null,
+                gainNode:null,
+                audioBuffer:null,
+                sourceNode:null
             };
         },
-        methods: {
-            begin() {
-                this.started = true;
-                this.startMusicFadeIn();
+        methods:{
+            async begin(){
+                this.started=true;
+                await this.startMusicFadeIn();
                 this.loopTypewriter();
             },
-
-            startMusicFadeIn() {
-                this.audio = new Audio(this.audioUrl);
-                this.audio.loop = false;
-                this.audio.volume = 0.0;
-                this.audio.play().catch(err => {
-                    console.warn("播放被阻止:", err);
-                });
-
-                let volume = 0.0;
-                const interval = setInterval(() => {
-                    if (this.isMuted) {
-                        this.audio.volume = 0;
-                        clearInterval(interval);
-                        return;
-                    }
-                    volume += 0.02;
-                    this.audio.volume = Math.min(volume, 1.0);
-                    if (volume >= 1.0) clearInterval(interval);
-                }, 100);
+            async startMusicFadeIn(){
+                try{
+                    const AudioContext = window.AudioContext||window.webkitAudioContext;
+                    this.audioCtx=new AudioContext();
+                    const response=await fetch(this.audioUrl);
+                    const arrayBuffer=await response.arrayBuffer();
+                    this.audioBuffer=await this.audioCtx.decodeAudioData(arrayBuffer);
+                    this.sourceNode=this.audioCtx.createBufferSource();
+                    this.sourceNode.buffer=this.audioBuffer;
+                    this.gainNode=this.audioCtx.createGain();
+                    this.gainNode.gain.value=0;
+                    this.sourceNode.connect(this.gainNode).connect(this.audioCtx.destination);
+                    this.sourceNode.loop=true;
+                    this.sourceNode.start(0);
+                    let volume=0;
+                    const fadeIn=setInterval(()=>{
+                        if(this.isMuted) this.gainNode.gain.value=0;
+                        else this.gainNode.gain.value=Math.min(volume+=0.02,1);
+                        if(volume>=1) clearInterval(fadeIn);
+                    },100);
+                }catch(e){console.warn(e);}
             },
-
-            toggleMute() {
-                this.isMuted = !this.isMuted;
-                if (this.audio) {
-                    this.audio.volume = this.isMuted ? 0 : 1;
-                }
-            },
-
-            toggleImageSize() {
-                this.enlarged = !this.enlarged;
-            },
-
-            async loopTypewriter() {
-                for (const msg of this.messages) {
+            toggleMute(){this.isMuted=!this.isMuted;if(this.gainNode)this.gainNode.gain.value=this.isMuted?0:1;},
+            async loopTypewriter(){
+                for(const msg of this.messages){
                     await this.typeSentence(msg);
                     await this.delay(this.pauseAfter);
                     await this.deleteSentence();
                 }
-                this.finished = true;
+                this.finished=true;
+                this.startEffectsCanvas();
             },
-
-            typeSentence(sentence) {
-                return new Promise(resolve => {
-                    let i = 0;
-                    this.displayText = "";
-                    const intv = setInterval(() => {
-                        this.displayText += sentence[i++];
-                        if (i === sentence.length) {
-                            clearInterval(intv);
-                            resolve();
-                        }
-                    }, this.typingSpeed);
+            typeSentence(sentence){
+                return new Promise(resolve=>{
+                    let i=0;
+                    this.displayText="";
+                    const intv=setInterval(()=>{
+                        this.displayText+=sentence[i++];
+                        if(i===sentence.length){clearInterval(intv);resolve();}
+                    },this.typingSpeed);
                 });
             },
-
-            deleteSentence() {
-                return new Promise(resolve => {
-                    const intv = setInterval(() => {
-                        this.displayText = this.displayText.slice(0, -1);
-                        if (!this.displayText) {
-                            clearInterval(intv);
-                            resolve();
-                        }
-                    }, this.typingSpeed / 1.5);
+            deleteSentence(){
+                return new Promise(resolve=>{
+                    const intv=setInterval(()=>{
+                        this.displayText=this.displayText.slice(0,-1);
+                        if(!this.displayText){clearInterval(intv);resolve();}
+                    },this.typingSpeed/1.5);
                 });
             },
-
-            delay(ms) {
-                return new Promise(res => setTimeout(res, ms));
+            delay(ms){return new Promise(res=>setTimeout(res,ms));},
+            startEffectsCanvas(){
+                const canvas=document.getElementById("effects-canvas");
+                const ctx=canvas.getContext("2d");
+                canvas.width=window.innerWidth;
+                canvas.height=window.innerHeight;
+                const hearts=[],stars=[];
+                function random(min,max){return Math.random()*(max-min)+min;}
+                function createHeart(){hearts.push({x:random(0,canvas.width),y:canvas.height+10,size:random(12,20),speed:random(0.5,1.2),alpha:0,life:0,maxLife:random(80,120)});}
+                function createStar(){stars.push({x:random(0,canvas.width),y:random(0,canvas.height/2),length:random(20,40),speed:random(3,6),alpha:1,angle: random(-0.2,0.2)});}
+                function animate(){
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    if(Math.random()<0.03) createHeart();
+                    hearts.forEach((h,i)=>{
+                        h.life++; h.y-=h.speed; h.alpha=Math.min(h.life/20,1);
+                        ctx.fillStyle=`rgba(255,50,200,${h.alpha})`;
+                        ctx.font=h.size+"px Arial";
+                        ctx.fillText("💙",h.x,h.y);
+                        if(h.life>h.maxLife||h.y<0) hearts.splice(i,1);
+                    });
+                    if(Math.random()<0.015) createStar();
+                    stars.forEach((s,i)=>{
+                        s.x += s.speed*Math.cos(s.angle);
+                        s.y += s.speed*Math.sin(s.angle);
+                        ctx.strokeStyle=`rgba(255,255,255,${s.alpha})`;
+                        ctx.lineWidth=2;
+                        ctx.beginPath();
+                        ctx.moveTo(s.x,s.y);
+                        ctx.lineTo(s.x - s.length*Math.cos(s.angle), s.y - s.length*Math.sin(s.angle));
+                        ctx.stroke();
+                        s.alpha-=0.01;
+                        if(s.alpha<=0) stars.splice(i,1);
+                    });
+                    requestAnimationFrame(animate);
+                }
+                animate();
+                window.addEventListener("resize",()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
             }
         },
-
-        mounted() {
-            particlesJS("particles-js", {
+        mounted(){
+            particlesJS("particles-js",{
                 particles: {
-                    number: { value: 80, density: { enable: true, value_area: 800 } },
-                    color: { value: "#ffffff" },
-                    shape: { type: "circle" },
-                    opacity: { value: 0.7 },
-                    size: { value: 3 },
-                    move: { enable: true, speed: 2, direction: "none" }
+                    number:{value:140},
+                    color:{value:["#cfe7ff","#ffffff","#b0e0ff"]},
+                    opacity:{value:0.6,random:true,anim:{enable:true,speed:1,opacity_min:0.15}},
+                    size:{value:2.4,random:true},
+                    move:{enable:true,speed:0.6,random:true},
+                    line_linked:{enable:false}
                 },
-                interactivity: {
-                    detect_on: "canvas",
-                    events: {
-                        onhover: { enable: true, mode: ["grab", "bubble"] },
-                        onclick: { enable: true, mode: "push" },
-                        resize: true
-                    },
-                    modes: {
-                        grab: { distance: 180, line_linked: { opacity: 0.4 } },
-                        bubble: { distance: 120, size: 6, duration: 2, opacity: 0.8 },
-                        push: { particles_nb: 4 }
-                    }
-                },
-                retina_detect: true
+                retina_detect:true
             });
         }
     }).mount("#app");
 </script>
-
 </body>
 </html>
